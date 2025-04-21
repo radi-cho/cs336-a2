@@ -2,6 +2,8 @@ import argparse
 import timeit
 import torch
 import numpy as np
+import torch.cuda.nvtx as nvtx
+
 from cs336_basics.model import BasicsTransformerLM
 from cs336_basics.data import get_batch
 from cs336_basics.nn_utils import cross_entropy
@@ -59,7 +61,8 @@ def benchmark_model(
             end = timeit.default_timer()
         else:
             start = timeit.default_timer()
-            outputs = model(inputs)
+            with nvtx.range("forward"):
+                outputs = model(inputs)
             torch.cuda.synchronize()
             end = timeit.default_timer()
 
