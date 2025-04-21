@@ -38,8 +38,9 @@ def benchmark_model(
     for _ in range(warmup_steps):
         inputs, targets = get_batch(dataset, batch_size, context_length, device)
         outputs = model(inputs)
-        loss = cross_entropy(outputs.view(-1, vocab_size), targets.view(-1))
-        loss.backward()
+        if backward:
+            loss = cross_entropy(outputs.view(-1, vocab_size), targets.view(-1))
+            loss.backward()
         torch.cuda.synchronize()
 
     times = []
