@@ -4,7 +4,6 @@ import torch
 import numpy as np
 from cs336_basics.model import BasicsTransformerLM
 from cs336_basics.data import get_batch
-from cs336_basics.optimizer import AdamW
 from cs336_basics.nn_utils import cross_entropy
 
 
@@ -19,7 +18,7 @@ def benchmark_model(
     batch_size: int,
     warmup_steps: int,
     timing_steps: int,
-    do_backward: bool,
+    backward: bool,
     device: str = "cuda" if torch.cuda.is_available() else "cpu",
 ):
     model = BasicsTransformerLM(
@@ -34,28 +33,32 @@ def benchmark_model(
 
     model.train()
 
-    dataset = np.random.randint(low=0, high=vocab_size, size=(100_000,)) # dtype=np.int64
+    dataset = np.random.randint(low=0, high=vocab_size, size=(100000,))
     inputs, targets = get_batch(dataset, batch_size, context_length, device)
 
-    optimizer = AdamW(model.parameters(), lr=1e-3)
-
-    def step():
+    for _ in range(warmup_steps):
         outputs = model(inputs)
         loss = cross_entropy(outputs.view(-1, vocab_size), targets.view(-1))
-        if do_backward:
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
+        loss.backward()
         torch.cuda.synchronize()
-
-    for _ in range(warmup_steps):
-        step()
 
     times = []
     for _ in range(timing_steps):
-        start = timeit.default_timer()
-        step()
-        end = timeit.default_timer()
+        if backward:
+            outputs = model(inputs)
+            loss = cross_entropy(outputs.view(-1, vocab_size), targets.view(-1))
+            torch.cuda.synchronize()
+
+            start = timeit.default_timer()
+            loss.backward()
+            torch.cuda.synchronize()
+            end = timeit.default_timer()
+        else:
+            start = timeit.default_timer()
+            outputs = model(inputs)
+            torch.cuda.synchronize()
+            end = timeit.default_timer()
+
         times.append(end - start)
 
     avg_time = np.mean(times)
@@ -75,7 +78,7 @@ if __name__ == "__main__":
     parser.add_argument("--batch_size", type=int, default=16)
     parser.add_argument("--warmup_steps", type=int, default=5)
     parser.add_argument("--timing_steps", type=int, default=10)
-    parser.add_argument("--do_backward", action="store_true")
+    parser.add_argument("--backward", action="store_true")
     args = parser.parse_args()
 
     benchmark_model(**vars(args))
