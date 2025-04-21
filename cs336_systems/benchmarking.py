@@ -48,7 +48,6 @@ def benchmark_model(
             optimizer.step()
         torch.cuda.synchronize()
 
-    print(f"Running {warmup_steps} warm-up steps...")
     for _ in range(warmup_steps):
         step()
 
