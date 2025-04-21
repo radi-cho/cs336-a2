@@ -62,7 +62,7 @@ def benchmark_model(
     avg_time = np.mean(times)
     std_time = np.std(times)
 
-    print(f"Average step time: {avg_time:.4f} seconds, std: {std_time:.4f}.")
+    print(f" & {avg_time:.4f} & {std_time:.4f} \\\\")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
