@@ -34,9 +34,9 @@ def benchmark_model(
     model.train()
 
     dataset = np.random.randint(low=0, high=vocab_size, size=(100000,))
-    inputs, targets = get_batch(dataset, batch_size, context_length, device)
 
     for _ in range(warmup_steps):
+        inputs, targets = get_batch(dataset, batch_size, context_length, device)
         outputs = model(inputs)
         loss = cross_entropy(outputs.view(-1, vocab_size), targets.view(-1))
         loss.backward()
@@ -44,6 +44,9 @@ def benchmark_model(
 
     times = []
     for _ in range(timing_steps):
+        inputs, targets = get_batch(dataset, batch_size, context_length, device)
+        model.zero_grad()
+
         if backward:
             outputs = model(inputs)
             loss = cross_entropy(outputs.view(-1, vocab_size), targets.view(-1))
@@ -65,6 +68,7 @@ def benchmark_model(
     std_time = np.std(times)
 
     print(f" & {avg_time:.4f} & {std_time:.4f} \\\\")
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
