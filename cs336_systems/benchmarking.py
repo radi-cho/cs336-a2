@@ -64,7 +64,10 @@ def benchmark_model(
             with nvtx.range("forward"):
                 with dtype_context:
                     outputs = model(inputs)
-                    loss = cross_entropy(outputs.view(-1, vocab_size), targets.view(-1))
+                torch.cuda.synchronize()
+            
+            with dtype_context:
+                loss = cross_entropy(outputs.view(-1, vocab_size), targets.view(-1))
                 torch.cuda.synchronize()
 
             start = timeit.default_timer()
