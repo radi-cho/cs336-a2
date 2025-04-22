@@ -3,6 +3,7 @@ import timeit
 import torch
 import numpy as np
 import torch.cuda.nvtx as nvtx
+from contextlib import nullcontext
 
 from cs336_basics.model import BasicsTransformerLM
 from cs336_basics.optimizer import AdamW
@@ -23,6 +24,7 @@ def benchmark_model(
     timing_steps: int,
     backward: bool,
     adam_step: bool,
+    mixed_precision: bool,
     device: str = "cuda" if torch.cuda.is_available() else "cpu",
 ):
     model = BasicsTransformerLM(
@@ -38,13 +40,16 @@ def benchmark_model(
     optimizer = AdamW(model.parameters(), lr=1e-3)
     model.train()
 
+    dtype_context = torch.autocast(device_type=device, dtype=torch.bfloat16) if mixed_precision else nullcontext()
     dataset = np.random.randint(low=0, high=vocab_size, size=(100000,))
 
     for _ in range(warmup_steps):
         inputs, targets = get_batch(dataset, batch_size, context_length, device)
-        outputs = model(inputs)
+        with dtype_context:
+            outputs = model(inputs)
+            if backward:
+                loss = cross_entropy(outputs.view(-1, vocab_size), targets.view(-1))
         if backward:
-            loss = cross_entropy(outputs.view(-1, vocab_size), targets.view(-1))
             loss.backward()
             if adam_step:
                 optimizer.step()
@@ -57,11 +62,10 @@ def benchmark_model(
 
         if backward:
             with nvtx.range("forward"):
-                outputs = model(inputs)
+                with dtype_context:
+                    outputs = model(inputs)
+                    loss = cross_entropy(outputs.view(-1, vocab_size), targets.view(-1))
                 torch.cuda.synchronize()
-
-            loss = cross_entropy(outputs.view(-1, vocab_size), targets.view(-1))
-            torch.cuda.synchronize()
 
             start = timeit.default_timer()
             with nvtx.range("backward"):
@@ -75,7 +79,8 @@ def benchmark_model(
         else:
             start = timeit.default_timer()
             with nvtx.range("forward"):
-                outputs = model(inputs)
+                with dtype_context:
+                    outputs = model(inputs)
                 torch.cuda.synchronize()
             end = timeit.default_timer()
 
@@ -101,6 +106,7 @@ if __name__ == "__main__":
     parser.add_argument("--timing_steps", type=int, default=10)
     parser.add_argument("--backward", action="store_true")
     parser.add_argument("--adam_step", action="store_true")
+    parser.add_argument("--mixed_precision", action="store_true")
     args = parser.parse_args()
 
     benchmark_model(**vars(args))
