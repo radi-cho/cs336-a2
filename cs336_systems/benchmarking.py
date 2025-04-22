@@ -53,19 +53,21 @@ def benchmark_model(
         if backward:
             with nvtx.range("forward"):
                 outputs = model(inputs)
+                torch.cuda.synchronize()
+
             loss = cross_entropy(outputs.view(-1, vocab_size), targets.view(-1))
             torch.cuda.synchronize()
 
             start = timeit.default_timer()
             with nvtx.range("backward"):
                 loss.backward()
-            torch.cuda.synchronize()
+                torch.cuda.synchronize()
             end = timeit.default_timer()
         else:
             start = timeit.default_timer()
             with nvtx.range("forward"):
                 outputs = model(inputs)
-            torch.cuda.synchronize()
+                torch.cuda.synchronize()
             end = timeit.default_timer()
 
         times.append(end - start)
