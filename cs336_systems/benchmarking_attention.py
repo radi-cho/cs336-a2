@@ -19,6 +19,8 @@ results = []
 
 for d_model in dmodels:
     for seq_len in seq_lens:
+        print(d_model, seq_len)
+
         Q = torch.randn(batch_size, seq_len, d_model, device=device, requires_grad=True)
         K = torch.randn(batch_size, seq_len, d_model, device=device, requires_grad=True)
         V = torch.randn(batch_size, seq_len, d_model, device=device, requires_grad=True)
