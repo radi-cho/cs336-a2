@@ -5,6 +5,7 @@ import numpy as np
 import torch.cuda.nvtx as nvtx
 
 from cs336_basics.model import BasicsTransformerLM
+from cs336_basics.optimizer import AdamW
 from cs336_basics.data import get_batch
 from cs336_basics.nn_utils import cross_entropy
 
@@ -21,6 +22,7 @@ def benchmark_model(
     warmup_steps: int,
     timing_steps: int,
     backward: bool,
+    adam_step: bool,
     device: str = "cuda" if torch.cuda.is_available() else "cpu",
 ):
     model = BasicsTransformerLM(
@@ -33,6 +35,7 @@ def benchmark_model(
         rope_theta=rope_theta,
     ).to(device)
 
+    optimizer = AdamW(model.parameters(), lr=1e-3)
     model.train()
 
     dataset = np.random.randint(low=0, high=vocab_size, size=(100000,))
@@ -43,6 +46,8 @@ def benchmark_model(
         if backward:
             loss = cross_entropy(outputs.view(-1, vocab_size), targets.view(-1))
             loss.backward()
+            if adam_step:
+                optimizer.step()
         torch.cuda.synchronize()
 
     times = []
@@ -62,6 +67,10 @@ def benchmark_model(
             with nvtx.range("backward"):
                 loss.backward()
                 torch.cuda.synchronize()
+            if adam_step:
+                with nvtx.range("optimizer_step"):
+                    optimizer.step()
+                    torch.cuda.synchronize()
             end = timeit.default_timer()
         else:
             start = timeit.default_timer()
@@ -91,6 +100,7 @@ if __name__ == "__main__":
     parser.add_argument("--warmup_steps", type=int, default=5)
     parser.add_argument("--timing_steps", type=int, default=10)
     parser.add_argument("--backward", action="store_true")
+    parser.add_argument("--adam_step", action="store_true")
     args = parser.parse_args()
 
     benchmark_model(**vars(args))
