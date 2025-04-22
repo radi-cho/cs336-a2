@@ -44,14 +44,15 @@ for d_model in dmodels:
 
             start = timeit.default_timer()
             for _ in range(n_runs):
-                out.mean().backward()
+                out.mean().backward(retain_graph=True)
                 torch.cuda.synchronize()
                 Q.grad = K.grad = V.grad = None
             end = timeit.default_timer()
             backward_time = (end - start) / n_runs
 
             peak_mem = torch.cuda.max_memory_allocated(device)
-        except:
+        except Exception as e:
+            print(e)
             forward_time = backward_time = mem_before_bwd = peak_mem = None
 
         results.append({
