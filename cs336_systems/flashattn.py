@@ -54,6 +54,7 @@ class FlashAttention(torch.autograd.Function):
         O = torch.cat(O_tiles, dim=1)
         L = torch.cat(L_tiles, dim=1)
 
+        ctx.is_causal = is_causal
         ctx.save_for_backward(Q, K, V, O, L)
         return O
 
@@ -66,9 +67,14 @@ class FlashAttention(torch.autograd.Function):
         Q, K, V, O, L = ctx.saved_tensors
         D = torch.sum(O * dO, dim=2)
 
-        _, _, dim = Q.shape
+        _, N_q, dim = Q.shape
+        N_k = K.shape[1]
 
         S = torch.matmul(Q, K.transpose(-1, -2)) / math.sqrt(dim)
+        if ctx.is_causal:
+            mask = torch.triu(torch.ones(N_q, N_k, device=Q.device, dtype=torch.bool), diagonal=1)
+            S = S.masked_fill(mask.unsqueeze(0), float('-inf'))
+
         P = P = torch.exp(S - L.unsqueeze(-1))
         dV = torch.matmul(P.transpose(-1, -2), dO)
         dP = torch.matmul(dO, V.transpose(-1, -2))
