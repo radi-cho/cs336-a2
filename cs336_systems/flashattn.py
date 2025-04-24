@@ -1,6 +1,6 @@
 import torch
 import math
-from typing import Tuple
+from typing import Tuple, Optional
 
 import triton
 import triton.language as tl
@@ -54,12 +54,29 @@ class FlashAttention(torch.autograd.Function):
         O = torch.cat(O_tiles, dim=1)
         L = torch.cat(L_tiles, dim=1)
 
-        ctx.save_for_backward(L)
+        ctx.save_for_backward(Q, K, V, O, L)
         return O
 
     @staticmethod
-    def backward(ctx, *grad_outputs):
-        return NotImplementedError()
+    @torch.compile
+    def backward(
+        ctx,
+        dO: torch.Tensor
+    ) -> Tuple[Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor], None]:
+        Q, K, V, O, L = ctx.saved_tensors
+        D = torch.sum(O * dO, dim=2)
+
+        _, _, dim = Q.shape
+
+        S = torch.matmul(Q, K.transpose(-1, -2)) / math.sqrt(dim)
+        P = P = torch.exp(S - L.unsqueeze(-1))
+        dV = torch.matmul(P.transpose(-1, -2), dO)
+        dP = torch.matmul(dO, V.transpose(-1, -2))
+        dS = P * (dP - D.unsqueeze(-1))
+        dQ = torch.matmul(dS, K) / math.sqrt(dim)
+        dK = torch.matmul(dS.transpose(-1, -2), Q) / math.sqrt(dim)
+
+        return dQ, dK, dV, None
 
 
 @triton.jit
@@ -162,7 +179,7 @@ def flash_fwd_kernel(
     tl.store(L_block_ptr, l.to(L_block_ptr.type.element_ty))
 
 
-class FlashAttentionTriton(torch.autograd.Function):
+class FlashAttentionTriton(FlashAttention):
     @staticmethod
     def forward(
         ctx,
@@ -202,5 +219,5 @@ class FlashAttentionTriton(torch.autograd.Function):
         )
 
         ctx.is_causal = is_causal
-        ctx.save_for_backward(L)
+        ctx.save_for_backward(Q, K, V, O, L)
         return O
