@@ -4,25 +4,25 @@ import pandas as pd
 
 from cs336_basics.model import scaled_dot_product_attention
 
-batch_size = 8
-dmodels = [16, 32, 64, 128]
-seq_lens = [256, 1024, 4096, 8192, 16384]
-n_warmup = 10
-n_runs = 100
+BATCH_SIZE = 8
+DMODELS = [16, 32, 64, 128]
+SEQ_LENS = [256, 1024, 4096, 8192, 16384]
+N_WARMUP = 10
+N_RUNS = 100
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 results = []
 
-for d_model in dmodels:
-    for seq_len in seq_lens:
+for d_model in DMODELS:
+    for seq_len in SEQ_LENS:
         print(f"d_model={d_model}, seq_len={seq_len}")
         try:
-            Q = torch.randn(batch_size, seq_len, d_model, device=device, requires_grad=True)
-            K = torch.randn(batch_size, seq_len, d_model, device=device, requires_grad=True)
-            V = torch.randn(batch_size, seq_len, d_model, device=device, requires_grad=True)
+            Q = torch.randn(BATCH_SIZE, seq_len, d_model, device=DEVICE, requires_grad=True)
+            K = torch.randn(BATCH_SIZE, seq_len, d_model, device=DEVICE, requires_grad=True)
+            V = torch.randn(BATCH_SIZE, seq_len, d_model, device=DEVICE, requires_grad=True)
             mask = None
 
-            for _ in range(n_warmup):
+            for _ in range(N_WARMUP):
                 out = scaled_dot_product_attention(Q, K, V, mask)
                 torch.cuda.synchronize()
                 out.mean().backward()
@@ -30,25 +30,25 @@ for d_model in dmodels:
                 Q.grad = K.grad = V.grad = None
 
             torch.cuda.reset_peak_memory_stats()
-            start_mem = torch.cuda.memory_allocated(device)
+            start_mem = torch.cuda.memory_allocated(DEVICE)
             start = timeit.default_timer()
-            for _ in range(n_runs):
+            for _ in range(N_RUNS):
                 out = scaled_dot_product_attention(Q, K, V, mask)
                 torch.cuda.synchronize()
             end = timeit.default_timer()
-            forward_time = (end - start) / n_runs
+            forward_time = (end - start) / N_RUNS
 
-            mem_before_bwd = torch.cuda.memory_allocated(device)
+            mem_before_bwd = torch.cuda.memory_allocated(DEVICE)
 
             start = timeit.default_timer()
-            for _ in range(n_runs):
+            for _ in range(N_RUNS):
                 out.mean().backward(retain_graph=True)
                 torch.cuda.synchronize()
                 Q.grad = K.grad = V.grad = None
             end = timeit.default_timer()
-            backward_time = (end - start) / n_runs
+            backward_time = (end - start) / N_RUNS
 
-            # peak_mem = torch.cuda.max_memory_allocated(device)
+            # peak_mem = torch.cuda.max_memory_allocated(DEVICE)
         except Exception as e:
             print(e)
             forward_time = backward_time = mem_before_bwd = None
