@@ -4,8 +4,8 @@ import triton.testing as tt
 
 from cs336_systems.flashattn import FlashAttention, FlashAttentionTriton
 
-SEQUENCE_LENGTHS = [2 ** i for i in range(7, 17)]  # 128 to 65536
-EMBED_DIMS = [2 ** i for i in range(3, 8)]          # 8 to 128
+SEQUENCE_LENGTHS = [2 ** i for i in range(7, 17)]
+EMBED_DIMS = [2 ** i for i in range(3, 8)]
 DTYPES = [torch.float32, torch.bfloat16]
 BATCH_SIZE = 1
 IS_CAUSAL = True
@@ -14,7 +14,7 @@ DEVICE = "cuda"
 def bench(fn, warmup: int = 5) -> float:
     for _ in range(warmup):
         fn()
-    return tt.do_bench(fn, flush_l2=False).mean * 1e3  # convert to ms
+    return tt.do_bench(fn, flush_l2=False).mean * 1e3
 
 results = []
 
@@ -64,4 +64,6 @@ for L in SEQUENCE_LENGTHS:
                     "total_ms": total_ms,
                 })
 
+
 df = pd.DataFrame(results)
+print(df)
