@@ -21,6 +21,8 @@ results = []
 for L in SEQUENCE_LENGTHS:
     for D in EMBED_DIMS:
         for dtype in DTYPES:
+            print(L, D, dtype)
+
             Q = torch.randn(BATCH_SIZE, L, D, device=DEVICE, dtype=dtype, requires_grad=True)
             K = torch.randn_like(Q)
             V = torch.randn_like(Q)

@@ -41,7 +41,7 @@ class FlashAttention(torch.autograd.Function):
                 m_prev = m_i.clone()
                 m_i = torch.maximum(m_i, rowmax_S_ij)
 
-                P_tilde_ij = torch.exp(Sij - m_i.unsqueeze(-1))
+                P_tilde_ij = torch.exp(Sij - m_i.unsqueeze(-1)).to(Q.dtype)
                 l_i = torch.exp(m_prev - m_i) * l_i + P_tilde_ij.sum(dim=2)
                 O_i = torch.exp(m_prev - m_i).unsqueeze(-1) * O_i + torch.matmul(P_tilde_ij, Vj)
 
