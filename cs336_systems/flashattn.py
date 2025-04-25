@@ -204,8 +204,7 @@ class FlashAttentionTriton(FlashAttention):
         O = torch.empty_like(Q)
         L = torch.empty(B, N_q, dtype=Q.dtype, device=Q.device)
 
-        BLOCK_M = min(64, D)
-        BLOCK_N = min(64, D)
+        BLOCK_M, BLOCK_N = 16, 16
 
         grid = (triton.cdiv(N_q, BLOCK_M), B)
         scale = 1.0 / math.sqrt(D)
