@@ -106,7 +106,7 @@ if __name__ == "__main__":
     parser.add_argument("--num_heads", type=int, default=8)
     parser.add_argument("--d_ff", type=int, default=2048)
     parser.add_argument("--rope_theta", type=float, default=10000.0)
-    parser.add_argument("--batch_size", type=int, default=16)
+    parser.add_argument("--batch_size", type=int, default=4)
     parser.add_argument("--warmup_steps", type=int, default=5)
     parser.add_argument("--timing_steps", type=int, default=10)
     parser.add_argument("--backward", action="store_true")

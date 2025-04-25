@@ -48,10 +48,10 @@ for d_model in dmodels:
             end = timeit.default_timer()
             backward_time = (end - start) / n_runs
 
-            peak_mem = torch.cuda.max_memory_allocated(device)
+            # peak_mem = torch.cuda.max_memory_allocated(device)
         except Exception as e:
             print(e)
-            forward_time = backward_time = mem_before_bwd = peak_mem = None
+            forward_time = backward_time = mem_before_bwd = None
 
         results.append({
             "d_model": d_model,
@@ -59,7 +59,7 @@ for d_model in dmodels:
             "forward_time_s": forward_time,
             "backward_time_s": backward_time,
             "mem_before_bwd_bytes": mem_before_bwd,
-            "peak_mem_bytes": peak_mem
+            # "peak_mem_bytes": peak_mem
         })
 
 df = pd.DataFrame(results)
