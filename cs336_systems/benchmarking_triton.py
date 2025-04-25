@@ -68,4 +68,5 @@ for L in SEQUENCE_LENGTHS:
 
 
 df = pd.DataFrame(results)
+df.to_csv("triton.csv")
 print(df)
