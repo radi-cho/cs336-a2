@@ -4,7 +4,8 @@ import triton.testing as tt
 
 from cs336_systems.flashattn import FlashAttention, FlashAttentionTriton
 
-SEQUENCE_LENGTHS = [2 ** i for i in range(7, 17)]
+# SEQUENCE_LENGTHS = [2 ** i for i in range(7, 17)]
+SEQUENCE_LENGTHS = [128]
 EMBED_DIMS = [2 ** i for i in range(4, 8)]
 DTYPES = [torch.float32, torch.bfloat16]
 BATCH_SIZE = 1
@@ -43,7 +44,7 @@ for L in SEQUENCE_LENGTHS:
             grad_triton = torch.randn_like(out_triton)
 
             def torch_full():
-                out = FlashAttentionTriton.apply(Q, K, V, IS_CAUSAL)
+                out = FlashAttention.apply(Q, K, V, IS_CAUSAL)
                 out.backward(grad_torch)
                 torch.cuda.synchronize()
 
