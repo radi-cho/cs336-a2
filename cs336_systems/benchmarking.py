@@ -37,8 +37,6 @@ def benchmark_model(
         rope_theta=rope_theta,
     ).to(device)
 
-    model = torch.compile(model)
-
     optimizer = AdamW(model.parameters(), lr=1e-3)
     model.train()
 
