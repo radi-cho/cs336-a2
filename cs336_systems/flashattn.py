@@ -58,7 +58,7 @@ class FlashAttention(torch.autograd.Function):
 
         ctx.is_causal = is_causal
         ctx.save_for_backward(Q, K, V, O, L)
-        return O, L
+        return O
 
     @staticmethod
     @torch.compile
