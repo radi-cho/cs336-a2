@@ -14,7 +14,7 @@ DEVICE = "cuda"
 def bench(fn, warmup: int = 5) -> float:
     for _ in range(warmup):
         fn()
-    return tt.do_bench(fn).mean * 1e3
+    return tt.do_bench(fn) * 1e3
 
 results = []
 
