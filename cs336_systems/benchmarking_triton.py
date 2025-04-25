@@ -5,7 +5,7 @@ import triton.testing as tt
 from cs336_systems.flashattn import FlashAttention, FlashAttentionTriton
 
 SEQUENCE_LENGTHS = [2 ** i for i in range(7, 17)]
-EMBED_DIMS = [2 ** i for i in range(4, 8)] # TODO: support 3
+EMBED_DIMS = [2 ** i for i in range(3, 8)]
 DTYPES = [torch.float32, torch.bfloat16]
 BATCH_SIZE = 1
 IS_CAUSAL = True

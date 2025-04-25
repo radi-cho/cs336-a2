@@ -1,6 +1,6 @@
 import torch
 import math
-from typing import Tuple, Optional
+from typing import Tuple
 
 import triton
 import triton.language as tl
@@ -204,11 +204,8 @@ class FlashAttentionTriton(FlashAttention):
         O = torch.empty_like(Q)
         L = torch.empty(B, N_q, dtype=Q.dtype, device=Q.device)
 
-        def round_to_16(x):
-            return ((x + 15) // 16) * 16
-
-        BLOCK_M = round_to_16(N_q)
-        BLOCK_N = round_to_16(N_k)
+        BLOCK_M = min(64, N_q)
+        BLOCK_N = min(64, N_q)
 
         grid = (triton.cdiv(N_q, BLOCK_M), B)
         scale = 1.0 / math.sqrt(D)
