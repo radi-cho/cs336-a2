@@ -58,7 +58,7 @@ for L in SEQUENCE_LENGTHS:
                     "impl": impl,
                     "seq_len": L,
                     "embed_dim": D,
-                    "dtype": dtype.name,
+                    "dtype": dtype,
                     "fwd_ms": fwd_ms,
                     "bwd_ms": bwd_ms,
                     "total_ms": total_ms,
