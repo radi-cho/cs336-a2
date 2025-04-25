@@ -17,6 +17,7 @@ class FlashAttention(torch.autograd.Function):
         batch_size = Q.shape[0]
         N_q, N_k = Q.shape[1], K.shape[1]
         dim = Q.shape[2]
+        dtype = Q.dtype
 
         B_q = max(16, N_q // 32)
         B_k = max(16, N_k // 32)
@@ -30,59 +31,58 @@ class FlashAttention(torch.autograd.Function):
 
         for Qi in Q_tiles:
             B_q_i = Qi.shape[1]
-            O_i = torch.zeros((batch_size, B_q_i, dim), device=Q.device)
-            l_i = torch.zeros((batch_size, B_q_i), device=Q.device)
-            m_i = torch.full((batch_size, B_q_i), float('-inf'), device=Q.device)
+
+            O_i = torch.zeros((batch_size, B_q_i, dim), device=Q.device, dtype=dtype)
+            l_i = torch.zeros((batch_size, B_q_i), device=Q.device, dtype=dtype)
+            m_i = torch.full((batch_size, B_q_i), float('-inf'), device=Q.device, dtype=torch.float32)
 
             for Kj, Vj in zip(K_tiles, V_tiles):
-                Sij = torch.matmul(Qi, Kj.transpose(-1, -2)) / math.sqrt(dim)
+                Sij = torch.matmul(Qi.float(), Kj.transpose(-1, -2).float()) / math.sqrt(dim)
                 rowmax_S_ij = Sij.max(dim=2).values
 
                 m_prev = m_i.clone()
                 m_i = torch.maximum(m_i, rowmax_S_ij)
 
-                P_tilde_ij = torch.exp(Sij - m_i.unsqueeze(-1)).to(Q.dtype)
-                l_i = torch.exp(m_prev - m_i) * l_i + P_tilde_ij.sum(dim=2)
-                O_i = torch.exp(m_prev - m_i).unsqueeze(-1) * O_i + torch.matmul(P_tilde_ij, Vj)
+                P_tilde_ij = torch.exp(Sij - m_i.unsqueeze(-1)).to(dtype)
+                l_i = torch.exp(m_prev - m_i).to(dtype) * l_i + P_tilde_ij.sum(dim=2)
+                O_i = torch.exp(m_prev - m_i).unsqueeze(-1).to(dtype) * O_i + torch.matmul(P_tilde_ij, Vj)
 
             O_i = O_i / l_i.unsqueeze(-1)
-            L_i = m_i + torch.log(l_i)
+            L_i = m_i + torch.log(l_i.to(torch.float32))
 
             O_tiles.append(O_i)
-            L_tiles.append(L_i)
+            L_tiles.append(L_i.to(dtype))
 
         O = torch.cat(O_tiles, dim=1)
         L = torch.cat(L_tiles, dim=1)
 
         ctx.is_causal = is_causal
         ctx.save_for_backward(Q, K, V, O, L)
-        return O
+        return O, L
 
     @staticmethod
     @torch.compile
-    def backward(
-        ctx,
-        dO: torch.Tensor
-    ) -> Tuple[Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor], None]:
+    def backward(ctx, dO: torch.Tensor):
         Q, K, V, O, L = ctx.saved_tensors
+        dtype = Q.dtype
         D = torch.sum(O * dO, dim=2)
 
         _, N_q, dim = Q.shape
         N_k = K.shape[1]
 
-        S = torch.matmul(Q, K.transpose(-1, -2)) / math.sqrt(dim)
+        S = torch.matmul(Q.float(), K.transpose(-1, -2).float()) / math.sqrt(dim)
         if ctx.is_causal:
             mask = torch.triu(torch.ones(N_q, N_k, device=Q.device, dtype=torch.bool), diagonal=1)
             S = S.masked_fill(mask.unsqueeze(0), float('-inf'))
 
-        P = P = torch.exp(S - L.unsqueeze(-1))
+        P = torch.exp(S - L.float().unsqueeze(-1)).to(dtype)
         dV = torch.matmul(P.transpose(-1, -2), dO)
         dP = torch.matmul(dO, V.transpose(-1, -2))
         dS = P * (dP - D.unsqueeze(-1))
         dQ = torch.matmul(dS, K) / math.sqrt(dim)
         dK = torch.matmul(dS.transpose(-1, -2), Q) / math.sqrt(dim)
 
-        return dQ, dK, dV, None
+        return dQ.to(dtype), dK.to(dtype), dV.to(dtype), None
 
 
 @triton.jit
