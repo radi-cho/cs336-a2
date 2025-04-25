@@ -4,10 +4,9 @@ import pandas as pd
 
 from cs336_basics.model import scaled_dot_product_attention
 
-
 batch_size = 8
-dmodels = [1024, 2048, 4096, 8192]
-seq_lens = [1024, 4096, 8192, 16384]
+dmodels = [16, 32, 64, 128]
+seq_lens = [256, 1024, 4096, 8192, 16384]
 n_warmup = 10
 n_runs = 100
 
@@ -16,8 +15,7 @@ results = []
 
 for d_model in dmodels:
     for seq_len in seq_lens:
-        print(d_model, seq_len)
-
+        print(f"d_model={d_model}, seq_len={seq_len}")
         try:
             Q = torch.randn(batch_size, seq_len, d_model, device=device, requires_grad=True)
             K = torch.randn(batch_size, seq_len, d_model, device=device, requires_grad=True)
