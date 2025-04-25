@@ -28,10 +28,14 @@ for L in SEQUENCE_LENGTHS:
             V = torch.randn_like(Q)
 
             def torch_fwd():
-                return FlashAttention.apply(Q, K, V, IS_CAUSAL)
+                out = FlashAttention.apply(Q, K, V, IS_CAUSAL)
+                torch.cuda.synchronize()
+                return out
 
             def triton_fwd():
-                return FlashAttentionTriton.apply(Q, K, V, IS_CAUSAL)
+                out = FlashAttentionTriton.apply(Q, K, V, IS_CAUSAL)
+                torch.cuda.synchronize()
+                return out
 
             out_torch = torch_fwd()
             grad_torch = torch.randn_like(out_torch)
@@ -41,10 +45,12 @@ for L in SEQUENCE_LENGTHS:
             def torch_full():
                 out = FlashAttentionTriton.apply(Q, K, V, IS_CAUSAL)
                 out.backward(grad_torch)
+                torch.cuda.synchronize()
 
             def triton_full():
                 out = FlashAttentionTriton.apply(Q, K, V, IS_CAUSAL)
                 out.backward(grad_triton)
+                torch.cuda.synchronize()
 
             t_torch_fwd = bench(torch_fwd)
             t_torch_full = bench(torch_full)
