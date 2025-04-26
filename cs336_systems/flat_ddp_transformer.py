@@ -31,18 +31,20 @@ def train_step(rank, world_size, args):
     xb = torch.randint(0, args.vocab_size, (args.batch_size, args.context_length), device=device)
     yb = torch.randint(0, args.vocab_size, (args.batch_size, args.context_length), device=device)
 
+    param_list = list(model.parameters())
+
     for _ in range(5):
         print("step")
         logits = model(xb)
         loss = cross_entropy(logits, yb)
         loss.backward()
 
-        grads = [p.grad.data for p in model.parameters()]
+        grads = [p.grad for p in param_list if p.grad is not None]
         flat = torch._utils._flatten_dense_tensors(grads)
         dist.all_reduce(flat, op=dist.ReduceOp.SUM)
         flat.div_(world_size)
-        for buf, p in zip(torch._utils._unflatten_dense_tensors(flat, grads), model.parameters()):
-            p.grad.data.copy_(buf)
+        for buf, p in zip(torch._utils._unflatten_dense_tensors(flat, grads), grads):
+            p.copy_(buf)
 
         optimizer.step()
         optimizer.zero_grad()
@@ -58,12 +60,12 @@ def train_step(rank, world_size, args):
     torch.cuda.synchronize()
     t2 = time.time()
 
-    grads = [p.grad.data for p in model.parameters()]
+    grads = [p.grad for p in param_list if p.grad is not None]
     flat = torch._utils._flatten_dense_tensors(grads)
     dist.all_reduce(flat, op=dist.ReduceOp.SUM)
     flat.div_(world_size)
-    for buf, p in zip(torch._utils._unflatten_dense_tensors(flat, grads), model.parameters()):
-        p.grad.data.copy_(buf)
+    for buf, p in zip(torch._utils._unflatten_dense_tensors(flat, grads), grads):
+        p.copy_(buf)
 
     torch.cuda.synchronize()
     t3 = time.time()
