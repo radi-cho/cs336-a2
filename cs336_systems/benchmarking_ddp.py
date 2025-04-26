@@ -22,7 +22,7 @@ def bench_all_reduce(rank, world_size, backend, size_mb, device, return_dict):
     dist.init_process_group(backend, rank=rank, world_size=world_size)
 
     tensor = get_tensor(size_mb, device)
-    torch.cuda.set_device(rank % torch.cuda.device_count()) if device == "cuda" else None
+    torch.cuda.set_device(rank) if device == "cuda" else None
 
     for _ in range(5):
         dist.all_reduce(tensor, async_op=False)
