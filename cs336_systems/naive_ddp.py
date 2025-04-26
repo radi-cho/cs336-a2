@@ -98,6 +98,7 @@ def main():
     max_diff = 0.0
     for k in baseline_sd:
         diff = (baseline_sd[k] - ddp_sd[k]).abs().max().item()
+        print(baseline_sd[k], ddp_sd[k])
         max_diff = max(max_diff, diff)
 
     if max_diff < 1e-5:
