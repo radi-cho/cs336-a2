@@ -14,7 +14,7 @@ RESULTS = []
 
 def get_tensor(size_mb, device):
     numel = (size_mb * 1024 * 1024) // 4 # float32
-    return torch.ones(numel, dtype=DTYPE, device=device)
+    return torch.randn(numel, dtype=DTYPE, device=device)
 
 def bench_all_reduce(rank, world_size, backend, size_mb, device, return_dict):
     os.environ["MASTER_ADDR"] = "localhost"
