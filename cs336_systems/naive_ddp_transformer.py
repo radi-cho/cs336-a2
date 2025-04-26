@@ -3,7 +3,7 @@ import torch
 import numpy as np
 import torch.distributed as dist
 import torch.multiprocessing as mp
-from cs336_basics.model import Transformer
+from cs336_basics.model import BasicsTransformerLM
 from cs336_basics.nn_utils import cross_entropy
 from cs336_basics.optimizer import AdamW
 
@@ -13,7 +13,7 @@ def train_step(rank, world_size, args):
     dist.init_process_group("nccl", rank=rank, world_size=world_size)
 
     device = f"cuda:{rank}"
-    model = Transformer(
+    model = BasicsTransformerLM(
         vocab_size=args.vocab_size,
         context_length=args.context_length,
         d_model=args.d_model,
