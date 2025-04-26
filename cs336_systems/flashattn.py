@@ -149,14 +149,14 @@ def flash_fwd_kernel(
         order=(0,),
     )
 
-    q = tl.load(Q_block_ptr).to(tl.float32)
+    q = tl.load(Q_block_ptr)
     o = tl.zeros((Q_TILE_SIZE, D), dtype=tl.float32)
     l = tl.zeros((Q_TILE_SIZE,), dtype=tl.float32)
     m = tl.full((Q_TILE_SIZE,), float("-inf"), dtype=tl.float32)
 
     for k_tile_start in range(0, N_KEYS, K_TILE_SIZE):
-        k = tl.load(K_block_ptr).to(tl.float32)
-        v = tl.load(V_block_ptr).to(tl.float32)
+        k = tl.load(K_block_ptr)
+        v = tl.load(V_block_ptr)
 
         S = tl.dot(q, k.T) * scale
         if is_causal:
