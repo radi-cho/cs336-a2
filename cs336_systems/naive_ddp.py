@@ -76,21 +76,21 @@ def ddp_train(rank, world_size, seed, batch_size, input_dim, epochs, lr, tmp_fil
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--world_size", type=int, default=2)
+    parser.add_argument("--lr", type=float, default=0.1)
+    parser.add_argument("--epochs", type=int, default=10)
+    parser.add_argument("--input_dim", type=int, default=10)
+    parser.add_argument("--batch_size", type=int, default=64)
     args = parser.parse_args()
 
     seed = 0
-    batch_size = 64
-    input_dim = 10
-    epochs = 5
-    lr = 0.1
     tmp_file = "ddp_model.pt"
 
-    X, y = generate_data(seed, batch_size, input_dim)
-    baseline_sd = train_single(seed, X, y, epochs, lr)
+    X, y = generate_data(seed, args.batch_size, args.input_dim)
+    baseline_sd = train_single(seed, X, y, args.epochs, args.lr)
 
     mp.spawn(
         ddp_train,
-        args=(args.world_size, seed, batch_size, input_dim, epochs, lr, tmp_file),
+        args=(args.world_size, seed, args.batch_size, args.input_dim, args.epochs, args.lr, tmp_file),
         nprocs=args.world_size,
         join=True
     )
