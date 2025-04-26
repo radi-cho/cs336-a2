@@ -22,9 +22,7 @@ def train_step(rank, world_size, args):
         num_layers=args.num_layers,
         num_heads=args.num_heads,
         d_ff=args.d_ff,
-        rope_theta=args.rope_theta,
-        device=device,
-        dtype=torch.float32
+        rope_theta=args.rope_theta
     ).to(device)
 
     model.train()
