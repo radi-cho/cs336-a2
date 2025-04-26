@@ -20,10 +20,9 @@ def bench_all_reduce(rank, world_size, backend, size_mb, device, return_dict):
     os.environ["MASTER_ADDR"] = "localhost"
     os.environ["MASTER_PORT"] = "29500"
     dist.init_process_group(backend, rank=rank, world_size=world_size)
-    print(rank)
 
+    torch.cuda.set_device(rank % torch.cuda.device_count()) if device == "cuda" else None
     tensor = get_tensor(size_mb, device)
-    torch.cuda.set_device(rank) if device == "cuda" else None
 
     for _ in range(5):
         dist.all_reduce(tensor, async_op=False)
