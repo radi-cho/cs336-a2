@@ -42,6 +42,12 @@ for L in SEQUENCE_LENGTHS:
             out_triton = triton_fwd()
             grad_triton = torch.randn_like(out_triton)
 
+            def torch_bwd_only():
+                out_torch.backward(grad_torch, retain_graph=True)
+
+            def triton_bwd_only():
+                out_triton.backward(grad_triton, retain_graph=True)
+
             def torch_full():
                 out = FlashAttention.apply(Q, K, V, IS_CAUSAL)
                 out.backward(grad_torch)
@@ -54,11 +60,12 @@ for L in SEQUENCE_LENGTHS:
 
             t_torch_fwd = bench(torch_fwd)
             t_torch_full = bench(torch_full)
-            t_torch_bwd = t_torch_full - t_torch_fwd
 
             t_triton_fwd = bench(triton_fwd)
             t_triton_full = bench(triton_full)
-            t_triton_bwd = t_triton_full - t_triton_fwd
+
+            t_torch_bwd = bench(torch_bwd_only)
+            t_triton_bwd = bench(triton_bwd_only)
 
             for impl, fwd_ms, bwd_ms, total_ms in [
                 ("PyTorch", t_torch_fwd, t_torch_bwd, t_torch_full),
