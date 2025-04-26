@@ -47,6 +47,7 @@ def ddp_train(rank, world_size, seed, batch_size, input_dim, epochs, lr, tmp_fil
     end = start + per_rank
     X_shard, y_shard = X[start:end], y[start:end]
 
+    torch.manual_seed(seed)
     model = build_model(input_dim, 16, y.size(1))
     opt = SGD(model.parameters(), lr=lr)
 
@@ -98,7 +99,6 @@ def main():
     max_diff = 0.0
     for k in baseline_sd:
         diff = (baseline_sd[k] - ddp_sd[k]).abs().max().item()
-        print(baseline_sd[k], ddp_sd[k])
         max_diff = max(max_diff, diff)
 
     if max_diff < 1e-5:
