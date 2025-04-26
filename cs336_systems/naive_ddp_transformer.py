@@ -32,6 +32,7 @@ def train_step(rank, world_size, args):
     yb = torch.randint(0, args.vocab_size, (args.batch_size, args.context_length), device=device)
 
     for _ in range(5):
+        print("step")
         logits = model(xb)
         loss = cross_entropy(logits, yb)
         loss.backward()
