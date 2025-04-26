@@ -48,28 +48,14 @@ for L in SEQUENCE_LENGTHS:
             def triton_bwd_only():
                 out_triton.backward(grad_triton, retain_graph=True)
 
-            def torch_full():
-                out = FlashAttention.apply(Q, K, V, IS_CAUSAL)
-                out.backward(grad_torch)
-                torch.cuda.synchronize()
-
-            def triton_full():
-                out = FlashAttentionTriton.apply(Q, K, V, IS_CAUSAL)
-                out.backward(grad_triton)
-                torch.cuda.synchronize()
-
             t_torch_fwd = bench(torch_fwd)
-            t_torch_full = bench(torch_full)
-
             t_triton_fwd = bench(triton_fwd)
-            t_triton_full = bench(triton_full)
-
             t_torch_bwd = bench(torch_bwd_only)
             t_triton_bwd = bench(triton_bwd_only)
 
-            for impl, fwd_ms, bwd_ms, total_ms in [
-                ("PyTorch", t_torch_fwd, t_torch_bwd, t_torch_full),
-                ("Triton",  t_triton_fwd, t_triton_bwd, t_triton_full)
+            for impl, fwd_ms, bwd_ms in [
+                ("PyTorch", t_torch_fwd, t_torch_bwd),
+                ("Triton",  t_triton_fwd, t_triton_bwd)
             ]:
                 results.append({
                     "impl": impl,
@@ -77,8 +63,7 @@ for L in SEQUENCE_LENGTHS:
                     "embed_dim": D,
                     "dtype": dtype,
                     "fwd_ms": fwd_ms,
-                    "bwd_ms": bwd_ms,
-                    "total_ms": total_ms,
+                    "bwd_ms": bwd_ms
                 })
 
 
