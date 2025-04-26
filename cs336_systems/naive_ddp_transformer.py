@@ -65,7 +65,7 @@ def train_step(rank, world_size, args):
     t4 = time.time()
 
     if rank == 0:
-        print(f"Forward+Backward Time: {t2 - t1:.4f}s")
+        print(f"Forward + Backward Time: {t2 - t0:.4f}s")
         print(f"Comm Time (all_reduce): {t3 - t2:.4f}s")
         print(f"Total Step Time: {t4 - t0:.4f}s")
 
