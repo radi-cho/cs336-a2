@@ -1,6 +1,6 @@
+import os
 import time
 import torch
-import numpy as np
 import torch.distributed as dist
 import torch.multiprocessing as mp
 from cs336_basics.model import BasicsTransformerLM
@@ -9,6 +9,8 @@ from cs336_basics.optimizer import AdamW
 
 
 def train_step(rank, world_size, args):
+    os.environ["MASTER_ADDR"] = "localhost"
+    os.environ["MASTER_PORT"] = "29500"
     torch.cuda.set_device(rank)
     dist.init_process_group("nccl", rank=rank, world_size=world_size)
 
