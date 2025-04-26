@@ -13,13 +13,14 @@ REPEAT = 10
 RESULTS = []
 
 def get_tensor(size_mb, device):
-    numel = (size_mb * 1024 * 1024) // 4  # float32
+    numel = (size_mb * 1024 * 1024) // 4 # float32
     return torch.ones(numel, dtype=DTYPE, device=device)
 
 def bench_all_reduce(rank, world_size, backend, size_mb, device, return_dict):
     os.environ["MASTER_ADDR"] = "localhost"
     os.environ["MASTER_PORT"] = "29500"
     dist.init_process_group(backend, rank=rank, world_size=world_size)
+    print(rank)
 
     tensor = get_tensor(size_mb, device)
     torch.cuda.set_device(rank) if device == "cuda" else None
