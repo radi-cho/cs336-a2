@@ -3,9 +3,9 @@ import torch
 import numpy as np
 import torch.distributed as dist
 import torch.multiprocessing as mp
-from model.transformer import Transformer
-from cs336_basics.crossentropy import cross_entropy
-from cs336_basics.adamw import AdamW
+from cs336_basics.model import Transformer
+from cs336_basics.nn_utils import cross_entropy
+from cs336_basics.optimizer import AdamW
 
 
 def train_step(rank, world_size, args):
