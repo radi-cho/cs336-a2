@@ -26,7 +26,7 @@ def train_step(rank, world_size, args):
     ).to(device)
 
     model.train()
-    optimizer = AdamW(model.parameters(), args.max_lr, (args.beta0, args.beta1), 1e-8, args.decay)
+    optimizer = AdamW(model.parameters(), args.max_lr, (args.beta0, args.beta1), 1e-5, args.decay)
 
     xb = torch.randint(0, args.vocab_size, (args.batch_size, args.context_length), device=device)
     yb = torch.randint(0, args.vocab_size, (args.batch_size, args.context_length), device=device)
@@ -42,13 +42,13 @@ def train_step(rank, world_size, args):
         if args.flat:
             grads = [p.grad for p in param_list if p.grad is not None]
             flat = torch._utils._flatten_dense_tensors(grads)
-            dist.all_reduce(flat, op=dist.ReduceOp.SUM)
+            dist.all_reduce(flat)
             flat.div_(world_size)
             for buf, p in zip(torch._utils._unflatten_dense_tensors(flat, grads), grads):
                 p.copy_(buf)
         else:
             for param in model.parameters():
-                dist.all_reduce(param.grad, op=dist.ReduceOp.SUM)
+                dist.all_reduce(param.grad)
                 param.grad /= world_size
         optimizer.step()
         optimizer.zero_grad()

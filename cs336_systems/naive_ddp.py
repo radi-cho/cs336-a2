@@ -60,7 +60,7 @@ def ddp_train(rank, world_size, seed, batch_size, input_dim, epochs, lr, tmp_fil
         loss.backward()
 
         for param in model.parameters():
-            dist.all_reduce(param.grad, op=dist.ReduceOp.SUM)
+            dist.all_reduce(param.grad)
             param.grad /= world_size
 
         opt.step()
