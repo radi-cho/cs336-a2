@@ -6,7 +6,7 @@ import torch.multiprocessing as mp
 from cs336_basics.model import BasicsTransformerLM
 from cs336_basics.nn_utils import cross_entropy
 from cs336_basics.optimizer import AdamW
-
+from ddp import DDP
 
 def train_step(rank, world_size, args):
     os.environ["MASTER_ADDR"] = "localhost"
@@ -24,22 +24,26 @@ def train_step(rank, world_size, args):
         d_ff=args.d_ff,
         rope_theta=args.rope_theta
     ).to(device)
-
+    if args.wrapper:
+        model = DDP(model)
     model.train()
     optimizer = AdamW(model.parameters(), args.max_lr, (args.beta0, args.beta1), 1e-5, args.decay)
 
     xb = torch.randint(0, args.vocab_size, (args.batch_size, args.context_length), device=device)
     yb = torch.randint(0, args.vocab_size, (args.batch_size, args.context_length), device=device)
 
-    if args.flat:
+    if args.flat and not args.wrapper:
         param_list = list(model.parameters())
 
     for _ in range(5):
         print("step")
         logits = model(xb)
         loss = cross_entropy(logits, yb)
+        optimizer.zero_grad()
         loss.backward()
-        if args.flat:
+        if args.wrapper:
+            model.finish_gradient_synchronization()
+        elif args.flat:
             grads = [p.grad for p in param_list if p.grad is not None]
             flat = torch._utils._flatten_dense_tensors(grads)
             dist.all_reduce(flat)
@@ -51,20 +55,23 @@ def train_step(rank, world_size, args):
                 dist.all_reduce(param.grad)
                 param.grad /= world_size
         optimizer.step()
-        optimizer.zero_grad()
 
     torch.cuda.synchronize()
     t0 = time.time()
+
     logits = model(xb)
     loss = cross_entropy(logits, yb)
     torch.cuda.synchronize()
     t1 = time.time()
 
+    optimizer.zero_grad()
     loss.backward()
     torch.cuda.synchronize()
     t2 = time.time()
 
-    if args.flat:
+    if args.wrapper:
+        model.finish_gradient_synchronization()
+    elif args.flat:
         grads = [p.grad for p in param_list if p.grad is not None]
         flat = torch._utils._flatten_dense_tensors(grads)
         dist.all_reduce(flat)
@@ -80,13 +87,14 @@ def train_step(rank, world_size, args):
     t3 = time.time()
 
     optimizer.step()
-    optimizer.zero_grad()
     torch.cuda.synchronize()
     t4 = time.time()
 
     if rank == 0:
-        print(f"Forward + Backward Time: {t2 - t0:.4f}s")
-        print(f"Comm Time (all_reduce): {t3 - t2:.4f}s")
+        print(f"Mode: {'wrapper' if args.wrapper else 'flat' if args.flat else 'naive'}")
+        print(f"Forward Time: {t1 - t0:.4f}s")
+        print(f"Backward Time: {t2 - t1:.4f}s")
+        print(f"Comm Time: {t3 - t2:.4f}s")
         print(f"Total Step Time: {t4 - t0:.4f}s")
 
     dist.destroy_process_group()
@@ -107,7 +115,8 @@ if __name__ == "__main__":
     parser.add_argument("--beta0", type=float, default=0.9)
     parser.add_argument("--beta1", type=float, default=0.999)
     parser.add_argument("--decay", type=float, default=0.01)
-    parser.add_argument("--flat", action="store_true")  # <-- added here
+    parser.add_argument("--flat", action="store_true")
+    parser.add_argument("--wrapper", action="store_true")
     args = parser.parse_args()
 
     mp.spawn(train_step, args=(2, args), nprocs=2, join=True)
