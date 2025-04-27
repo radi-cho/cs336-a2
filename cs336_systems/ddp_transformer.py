@@ -31,21 +31,25 @@ def train_step(rank, world_size, args):
     xb = torch.randint(0, args.vocab_size, (args.batch_size, args.context_length), device=device)
     yb = torch.randint(0, args.vocab_size, (args.batch_size, args.context_length), device=device)
 
-    param_list = list(model.parameters())
+    if args.flat:
+        param_list = list(model.parameters())
 
     for _ in range(5):
         print("step")
         logits = model(xb)
         loss = cross_entropy(logits, yb)
         loss.backward()
-
-        grads = [p.grad for p in param_list if p.grad is not None]
-        flat = torch._utils._flatten_dense_tensors(grads)
-        dist.all_reduce(flat, op=dist.ReduceOp.SUM)
-        flat.div_(world_size)
-        for buf, p in zip(torch._utils._unflatten_dense_tensors(flat, grads), grads):
-            p.copy_(buf)
-
+        if args.flat:
+            grads = [p.grad for p in param_list if p.grad is not None]
+            flat = torch._utils._flatten_dense_tensors(grads)
+            dist.all_reduce(flat, op=dist.ReduceOp.SUM)
+            flat.div_(world_size)
+            for buf, p in zip(torch._utils._unflatten_dense_tensors(flat, grads), grads):
+                p.copy_(buf)
+        else:
+            for param in model.parameters():
+                dist.all_reduce(param.grad, op=dist.ReduceOp.SUM)
+                param.grad /= world_size
         optimizer.step()
         optimizer.zero_grad()
 
@@ -60,12 +64,17 @@ def train_step(rank, world_size, args):
     torch.cuda.synchronize()
     t2 = time.time()
 
-    grads = [p.grad for p in param_list if p.grad is not None]
-    flat = torch._utils._flatten_dense_tensors(grads)
-    dist.all_reduce(flat, op=dist.ReduceOp.SUM)
-    flat.div_(world_size)
-    for buf, p in zip(torch._utils._unflatten_dense_tensors(flat, grads), grads):
-        p.copy_(buf)
+    if args.flat:
+        grads = [p.grad for p in param_list if p.grad is not None]
+        flat = torch._utils._flatten_dense_tensors(grads)
+        dist.all_reduce(flat)
+        flat.div_(world_size)
+        for buf, p in zip(torch._utils._unflatten_dense_tensors(flat, grads), grads):
+            p.copy_(buf)
+    else:
+        for param in model.parameters():
+            dist.all_reduce(param.grad)
+            param.grad /= world_size
 
     torch.cuda.synchronize()
     t3 = time.time()
@@ -98,6 +107,7 @@ def main():
     parser.add_argument("--beta0", type=float, default=0.9)
     parser.add_argument("--beta1", type=float, default=0.999)
     parser.add_argument("--decay", type=float, default=0.01)
+    parser.add_argument("--flat", action="store_true")  # <-- added here
     args = parser.parse_args()
 
     mp.spawn(train_step, args=(2, args), nprocs=2, join=True)
