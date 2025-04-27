@@ -26,6 +26,8 @@ class DDP(torch.nn.Module):
         for handle in self.grad_handles:
             handle.wait()
 
+        self.grad_handles.clear()
+
         world_size = dist.get_world_size()
         for param in self.module.parameters():
             if param.grad is not None:
