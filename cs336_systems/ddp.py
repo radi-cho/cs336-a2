@@ -9,17 +9,19 @@ class DDP(torch.nn.Module):
 
         for param in self.module.parameters():
             dist.broadcast(param.data, src=0)
+        
+        self.grad_handles = []
+        for param in self.module.parameters():
+            param.register_post_accumulate_grad_hook(
+                lambda grad, p: self.grad_handles.append(
+                    dist.all_reduce(grad, async_op=True)
+                )
+            )
 
     def forward(self, *inputs, **kwargs):
         return self.module(*inputs, **kwargs)
 
     def finish_gradient_synchronization(self):
-        self.grad_handles = []
-        for param in self.module.parameters():
-            if param.grad is not None:
-                handle = dist.all_reduce(param.grad, async_op=True)
-                self.grad_handles.append(handle)
-
         for handle in self.grad_handles:
             handle.wait()
 
