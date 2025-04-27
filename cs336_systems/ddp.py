@@ -8,7 +8,7 @@ class DDP(torch.nn.Module):
         self.grad_handles = []
 
         for param in self.module.parameters():
-            dist.broadcast(param.data)
+            dist.broadcast(param.data, src=0)
 
     def forward(self, *inputs, **kwargs):
         return self.module(*inputs, **kwargs)
