@@ -10,13 +10,13 @@ class DDP(torch.nn.Module):
         for param in self.module.parameters():
             dist.broadcast(param.data, src=0)
         
+        def hook(param):
+            if param.grad is not None:
+                self.grad_handles.append(dist.all_reduce(param.grad, async_op=True))
+
         self.grad_handles = []
         for param in self.module.parameters():
-            param.register_post_accumulate_grad_hook(
-                lambda grad, p: self.grad_handles.append(
-                    dist.all_reduce(grad, async_op=True)
-                )
-            )
+            param.register_post_accumulate_grad_hook(hook)
 
     def forward(self, *inputs, **kwargs):
         return self.module(*inputs, **kwargs)
