@@ -16,7 +16,8 @@ class DDP(torch.nn.Module):
 
         self.grad_handles = []
         for param in self.module.parameters():
-            param.register_post_accumulate_grad_hook(hook)
+            if param.requires_grad:
+                param.register_post_accumulate_grad_hook(hook)
 
     def forward(self, *inputs, **kwargs):
         return self.module(*inputs, **kwargs)
