@@ -73,7 +73,7 @@ def ddp_train(rank, world_size, seed, batch_size, input_dim, epochs, lr, tmp_fil
     dist.destroy_process_group()
 
 
-def main():
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--world_size", type=int, default=2)
     parser.add_argument("--lr", type=float, default=0.1)
@@ -105,7 +105,3 @@ def main():
         print("good!")
     else:
         print("bad!")
-
-
-if __name__ == "__main__":
-    main()

@@ -10,7 +10,7 @@ SIZES_MB = [1, 10, 100, 1024]
 NUM_PROCESSES_LIST = [2, 4, 6]
 DTYPE = torch.float32
 REPEAT = 10
-RESULTS = []
+results = []
 
 def get_tensor(size_mb, device):
     numel = (size_mb * 1024 * 1024) // 4 # float32
@@ -62,7 +62,7 @@ if __name__ == "__main__":
                     continue
                 print(f"Benchmarking: {backend=}, {device=}, {size_mb=}, {world_size=}")
                 avg_ms = launch(world_size, backend, size_mb, device)
-                RESULTS.append({
+                results.append({
                     "backend": backend,
                     "device": device,
                     "size_mb": size_mb,
@@ -70,6 +70,6 @@ if __name__ == "__main__":
                     "all_reduce_ms": avg_ms
                 })
 
-    df = pd.DataFrame(RESULTS)
+    df = pd.DataFrame(results)
     df.to_csv("ddp_allreduce_benchmark.csv")
     print(df)

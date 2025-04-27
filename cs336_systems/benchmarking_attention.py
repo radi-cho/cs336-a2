@@ -62,6 +62,8 @@ for d_model in DMODELS:
             # "peak_mem_bytes": peak_mem
         })
 
-df = pd.DataFrame(results)
-df.to_csv("attention.csv")
-print(df)
+
+if __name__ == "__main__":
+    df = pd.DataFrame(results)
+    df.to_csv("attention.csv")
+    print(df)

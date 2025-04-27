@@ -17,7 +17,7 @@ def make_latex_table(sub_df, impl, dtype):
     table.append("\\begin{tabular}{l" + "c" * len(embed_dims) + "}")
     header = ["len vs dim"] + [str(ed) for ed in embed_dims]
     table.append(" & ".join(header) + " \\\\ \\hline")
-    
+
     for sl in seq_lens:
         row = [str(sl)]
         for ed in embed_dims:
@@ -29,13 +29,14 @@ def make_latex_table(sub_df, impl, dtype):
             else:
                 row.append("--")
         table.append(" & ".join(row) + " \\\\")
-    
+
     table.append("\\end{tabular}")
     table.append("\\end{table}")
     return "\n".join(table)
 
-for impl, dtype in itertools.product(impls, dtypes):
-    sub_df = df[(df["impl"] == impl) & (df["dtype"] == dtype)]
-    if not sub_df.empty:
-        latex = make_latex_table(sub_df, impl, dtype)
-        print(latex)
+if __name__ == "__main__":
+    for impl, dtype in itertools.product(impls, dtypes):
+        sub_df = df[(df["impl"] == impl) & (df["dtype"] == dtype)]
+        if not sub_df.empty:
+            latex = make_latex_table(sub_df, impl, dtype)
+            print(latex)

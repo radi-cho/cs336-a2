@@ -92,7 +92,7 @@ def train_step(rank, world_size, args):
     dist.destroy_process_group()
 
 
-def main():
+if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--vocab_size", type=int, default=32000)
@@ -111,7 +111,3 @@ def main():
     args = parser.parse_args()
 
     mp.spawn(train_step, args=(2, args), nprocs=2, join=True)
-
-
-if __name__ == "__main__":
-    main()

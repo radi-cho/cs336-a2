@@ -66,7 +66,7 @@ for L in SEQUENCE_LENGTHS:
                     "bwd_ms": bwd_ms
                 })
 
-
-df = pd.DataFrame(results)
-df.to_csv("triton.csv")
-print(df)
+if __name__ == "__main__":
+    df = pd.DataFrame(results)
+    df.to_csv("triton.csv")
+    print(df)
