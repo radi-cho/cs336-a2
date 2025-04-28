@@ -48,13 +48,14 @@ class DDPBucket(torch.nn.Module):
         curr_bucket = []
         curr_size = 0
         for p in reversed(list(self.module.parameters())):
-            p_size = p.numel() * p.element_size()
-            if curr_bucket and curr_size + p_size > self.bucket_size_bytes:
-                buckets.append(curr_bucket)
-                curr_bucket = []
-                curr_size = 0
-            curr_bucket.append(p)
-            curr_size += p_size
+            if p.requires_grad:
+                p_size = p.numel() * p.element_size()
+                if curr_bucket and curr_size + p_size > self.bucket_size_bytes:
+                    buckets.append(curr_bucket)
+                    curr_bucket = []
+                    curr_size = 0
+                curr_bucket.append(p)
+                curr_size += p_size
         if curr_bucket:
             buckets.append(curr_bucket)
 
