@@ -47,7 +47,7 @@ class DDPBucket(torch.nn.Module):
         buckets = []
         curr_bucket = []
         curr_size = 0
-        for p in reversed(self.module.parameters()):
+        for p in reversed(list(self.module.parameters())):
             p_size = p.numel() * p.element_size()
             if curr_bucket and curr_size + p_size > self.bucket_size_bytes:
                 buckets.append(curr_bucket)
