@@ -106,17 +106,15 @@ class DDPBucket(torch.nn.Module):
         for handle in self.grad_handles:
             handle.wait()
 
+        world_size = dist.get_world_size()
+
         for bucket in self.buckets:
             buf = bucket["buffer"]
+            buf /= world_size
             for p in bucket["params"]:
                 start, end = bucket["offsets"][p]
                 if p.grad is not None:
                     p.grad.view(-1).copy_(buf[start:end])
+            bucket["count"] = 0
 
         self.grad_handles.clear()
-        bucket["count"] = 0
-
-        world_size = dist.get_world_size()
-        for p in self.module.parameters():
-            if p.grad is not None:
-                p.grad /= world_size
