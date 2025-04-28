@@ -25,7 +25,7 @@ def train_step(rank, world_size, args):
         rope_theta=args.rope_theta
     ).to(device)
     if args.wrapper:
-        model = DDPBucket(model)
+        model = DDPBucket(model, args.bucket_size_mb)
     model.train()
     optimizer = AdamW(model.parameters(), args.max_lr, (args.beta0, args.beta1), 1e-5, args.decay)
 
@@ -109,8 +109,9 @@ if __name__ == "__main__":
     parser.add_argument("--num_layers", type=int, default=48)
     parser.add_argument("--num_heads", type=int, default=25)
     parser.add_argument("--d_ff", type=int, default=6400)
-    parser.add_argument("--rope_theta", type=float, default=10000.0)
     parser.add_argument("--batch_size", type=int, default=32)
+    parser.add_argument("--bucket_size_mb", type=int, default=1)
+    parser.add_argument("--rope_theta", type=float, default=10000.0)
     parser.add_argument("--max_lr", type=float, default=3e-4)
     parser.add_argument("--beta0", type=float, default=0.9)
     parser.add_argument("--beta1", type=float, default=0.999)
