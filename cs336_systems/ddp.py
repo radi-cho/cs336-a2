@@ -82,7 +82,7 @@ class DDPBucket(torch.nn.Module):
         for bucket in self.buckets:
             for p in bucket["params"]:
                 def hook(grad):
-                    b = self.param_to_bucket[p]
+                    b = self.lookup[p]
                     start, end = b["offsets"][p]
                     b["buffer"][start:end].copy_(grad.view(-1))
                     if p is b[-1]["buffer"]:
