@@ -114,6 +114,7 @@ class DDPBucket(torch.nn.Module):
                     p.grad.view(-1).copy_(buf[start:end])
 
         self.grad_handles.clear()
+        bucket["count"] = 0
 
         world_size = dist.get_world_size()
         for p in self.module.parameters():
