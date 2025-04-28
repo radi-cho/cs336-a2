@@ -89,11 +89,11 @@ class DDPBucket(torch.nn.Module):
             offsets = bucket["offsets"]
 
             for p in params:
-                def hook(incp, buf=buffer, off=offsets):
+                def hook(incp, buf=buffer, off=offsets, bkt=bucket, ex=expected):
                     start, end = off[incp]
                     buf[start:end].copy_(incp.grad.view(-1))
-                    bucket["count"] += 1
-                    if bucket["count"] == expected:
+                    bkt["count"] += 1
+                    if bkt["count"] == ex:
                         handle = dist.all_reduce(buf, async_op=True)
                         self.grad_handles.append(handle)
 
