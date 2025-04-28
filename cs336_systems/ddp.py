@@ -1,6 +1,7 @@
 import torch
 import torch.distributed as dist
 
+
 class DDP(torch.nn.Module):
     def __init__(self, module: torch.nn.Module):
         super().__init__()
@@ -86,17 +87,16 @@ class DDPBucket(torch.nn.Module):
             expected = len(params)
             buffer = bucket["buffer"]
             offsets = bucket["offsets"]
-            last_param = params[-1]
 
             for p in params:
-                def hook(grad, param=p, buf=buffer, off=offsets, last=last_param):
+                def hook(p, buf=buffer, off=offsets):
                     start, end = off[param]
-                    buf[start:end].copy_(grad.view(-1))
+                    buf[start:end].copy_(p.grad.view(-1))
                     bucket["count"] += 1
                     if bucket["count"] == expected:
                         handle = dist.all_reduce(buf, async_op=True)
                         self.grad_handles.append(handle)
-                    return grad
+
                 p.register_post_accumulate_grad_hook(hook)
 
     def forward(self, *inputs, **kwargs):
