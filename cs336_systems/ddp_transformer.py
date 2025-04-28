@@ -6,7 +6,7 @@ import torch.multiprocessing as mp
 from cs336_basics.model import BasicsTransformerLM
 from cs336_basics.nn_utils import cross_entropy
 from cs336_basics.optimizer import AdamW
-from ddp import DDP
+from ddp import DDPBucket
 
 def train_step(rank, world_size, args):
     os.environ["MASTER_ADDR"] = "localhost"
@@ -25,7 +25,7 @@ def train_step(rank, world_size, args):
         rope_theta=args.rope_theta
     ).to(device)
     if args.wrapper:
-        model = DDP(model)
+        model = DDPBucket(model)
     model.train()
     optimizer = AdamW(model.parameters(), args.max_lr, (args.beta0, args.beta1), 1e-5, args.decay)
 
