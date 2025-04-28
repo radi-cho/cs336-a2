@@ -82,6 +82,8 @@ class DDPBucket(torch.nn.Module):
 
         for bucket in self.buckets:
             params = bucket["params"]
+            bucket["count"] = 0
+            expected = len(params)
             buffer = bucket["buffer"]
             offsets = bucket["offsets"]
             last_param = params[-1]
@@ -90,7 +92,8 @@ class DDPBucket(torch.nn.Module):
                 def hook(grad, param=p, buf=buffer, off=offsets, last=last_param):
                     start, end = off[param]
                     buf[start:end].copy_(grad.view(-1))
-                    if param is last:
+                    bucket["count"] += 1
+                    if bucket["count"] == expected:
                         handle = dist.all_reduce(buf, async_op=True)
                         self.grad_handles.append(handle)
                     return grad
@@ -109,7 +112,6 @@ class DDPBucket(torch.nn.Module):
                 start, end = bucket["offsets"][p]
                 if p.grad is not None:
                     p.grad.view(-1).copy_(buf[start:end])
-                    print(buf[start:end])
 
         self.grad_handles.clear()
 
