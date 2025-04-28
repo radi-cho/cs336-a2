@@ -90,7 +90,7 @@ class DDPBucket(torch.nn.Module):
 
             for p in params:
                 def hook(p, buf=buffer, off=offsets):
-                    start, end = off[param]
+                    start, end = off[p]
                     buf[start:end].copy_(p.grad.view(-1))
                     bucket["count"] += 1
                     if bucket["count"] == expected:
