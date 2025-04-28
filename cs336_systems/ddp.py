@@ -81,13 +81,17 @@ class DDPBucket(torch.nn.Module):
                 self.lookup[p] = self.buckets[-1]
 
         for bucket in self.buckets:
-            for p in bucket["params"]:
-                def hook(grad):
-                    b = self.lookup[p]
-                    start, end = b["offsets"][p]
-                    b["buffer"][start:end].copy_(grad.view(-1))
-                    if p is b[-1]["buffer"]:
-                        handle = dist.all_reduce(b["buffer"], async_op=True)
+            params = bucket["params"]
+            buffer = bucket["buffer"]
+            offsets = bucket["offsets"]
+            last_param = params[-1]
+
+            for p in params:
+                def hook(grad, param=p, buf=buffer, off=offsets, last=last_param):
+                    start, end = off[param]
+                    buf[start:end].copy_(grad.view(-1))
+                    if param is last:
+                        handle = dist.all_reduce(buf, async_op=True)
                         self.grad_handles.append(handle)
                     return grad
                 p.register_post_accumulate_grad_hook(hook)
