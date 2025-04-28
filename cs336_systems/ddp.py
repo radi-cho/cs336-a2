@@ -109,6 +109,7 @@ class DDPBucket(torch.nn.Module):
                 start, end = bucket["offsets"][p]
                 if p.grad is not None:
                     p.grad.view(-1).copy_(buf[start:end])
+                    print(buf[start:end])
 
         self.grad_handles.clear()
 
