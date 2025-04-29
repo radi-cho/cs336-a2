@@ -116,10 +116,9 @@ def train_step(rank, world_size, args):
         print(f"Comm Time: {t3 - t2:.4f}s")
         print(f"Total Step Time: {t4 - t0:.4f}s")
 
-        if args.sharded:
-            print(f"After Init: current={init_curr/1e9:.3f}GB, peak={init_peak/1e9:.3f}GB")
-            print(f"Before Step: current={before_curr/1e9:.3f}GB, peak={before_peak/1e9:.3f}GB")
-            print(f"After Step: current={after_curr/1e9:.3f}GB, peak={after_peak/1e9:.3f}GB")
+        print(f"After Init: current={init_curr/1e9:.3f}GB, peak={init_peak/1e9:.3f}GB")
+        print(f"Before Step: current={before_curr/1e9:.3f}GB, peak={before_peak/1e9:.3f}GB")
+        print(f"After Step: current={after_curr/1e9:.3f}GB, peak={after_peak/1e9:.3f}GB")
 
     dist.destroy_process_group()
 
