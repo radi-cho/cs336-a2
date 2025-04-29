@@ -36,7 +36,7 @@ def train_step(rank, world_size, args):
         model = DDPBucket(model, args.bucket_size_mb)
     model.train()
     if args.sharded:
-        optimizer = ShardedOptimizer(model.parameters(), lr=args.max_lr, betas=(args.beta0, args.beta1), eps=args.eps, weight_decay=args.decay)
+        optimizer = ShardedOptimizer(model.parameters(), AdamW, lr=args.max_lr, betas=(args.beta0, args.beta1), eps=args.eps, weight_decay=args.decay)
     else:
         optimizer = AdamW(model.parameters(), lr=args.max_lr, betas=(args.beta0, args.beta1), eps=args.eps, weight_decay=args.decay)
 
