@@ -76,3 +76,5 @@ uv run benchmarking.py --d_model 2560 --d_ff 10240 --num_layers 32 --num_heads 3
 
 uv run nsys profile --trace=cuda,nvtx,osrt,mpi --output=trace_wrapper --force-overwrite true python cs336_systems/ddp_transformer.py --batch_size 16 --wrapper
 uv run nsys profile --trace=cuda,nvtx,osrt,mpi --output=trace_ddp --force-overwrite true python cs336_systems/ddp_transformer.py --batch_size 16
+
+uv run nsys profile --trace=cuda,nvtx,osrt,mpi --output=trace_ddp_bucket --force-overwrite true python cs336_systems/ddp_transformer.py --batch_size 16 --wrapper --bucket_size_mb 1000
