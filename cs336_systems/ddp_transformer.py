@@ -36,9 +36,9 @@ def train_step(rank, world_size, args):
         model = DDPBucket(model, args.bucket_size_mb)
     model.train()
     if args.sharded:
-        optimizer = ShardedOptimizer(model.parameters(), AdamW, args.max_lr, (args.beta0, args.beta1), args.epsilon, args.decay)
+        optimizer = ShardedOptimizer(model.parameters(), AdamW, args.max_lr, (args.beta0, args.beta1), args.eps, args.decay)
     else:
-        optimizer = AdamW(model.parameters(), args.max_lr, (args.beta0, args.beta1), 1e-5, args.decay)
+        optimizer = AdamW(model.parameters(), args.max_lr, (args.beta0, args.beta1), args.eps, args.decay)
 
     init_curr, init_peak = record_mem_stats(device)
 
@@ -136,6 +136,7 @@ if __name__ == "__main__":
     parser.add_argument("--bucket_size_mb", type=int, default=1)
     parser.add_argument("--rope_theta", type=float, default=10000.0)
     parser.add_argument("--max_lr", type=float, default=3e-4)
+    parser.add_argument("--eps", type=float, default=1e-5)
     parser.add_argument("--beta0", type=float, default=0.9)
     parser.add_argument("--beta1", type=float, default=0.999)
     parser.add_argument("--decay", type=float, default=0.01)

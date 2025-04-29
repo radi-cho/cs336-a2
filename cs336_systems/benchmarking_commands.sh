@@ -78,3 +78,5 @@ uv run nsys profile --trace=cuda,nvtx,osrt,mpi --output=trace_wrapper --force-ov
 uv run nsys profile --trace=cuda,nvtx,osrt,mpi --output=trace_ddp --force-overwrite true python cs336_systems/ddp_transformer.py --batch_size 16
 
 uv run nsys profile --trace=cuda,nvtx,osrt,mpi --output=trace_ddp_bucket --force-overwrite true python cs336_systems/ddp_transformer.py --batch_size 16 --wrapper --bucket_size_mb 1000
+
+uv run cs336_systems/ddp_transformer.py --batch_size 16 --flat
