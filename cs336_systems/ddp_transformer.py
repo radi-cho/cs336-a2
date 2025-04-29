@@ -6,7 +6,15 @@ import torch.multiprocessing as mp
 from cs336_basics.model import BasicsTransformerLM
 from cs336_basics.nn_utils import cross_entropy
 from cs336_basics.optimizer import AdamW
-from ddp import DDPBucket
+from cs336_systems.optimizer import ShardedOptimizer
+from cs336_systems.ddp import DDPBucket
+
+
+def record_mem_stats(device):
+    peak = torch.cuda.max_memory_allocated(device)
+    current = torch.cuda.memory_allocated(device)
+    return current, peak
+
 
 def train_step(rank, world_size, args):
     os.environ["MASTER_ADDR"] = "localhost"
@@ -27,7 +35,12 @@ def train_step(rank, world_size, args):
     if args.wrapper:
         model = DDPBucket(model, args.bucket_size_mb)
     model.train()
-    optimizer = AdamW(model.parameters(), args.max_lr, (args.beta0, args.beta1), 1e-5, args.decay)
+    if args.sharded:
+        optimizer = ShardedOptimizer(model.parameters(), AdamW, args.max_lr, (args.beta0, args.beta1), args.epsilon, args.decay)
+    else:
+        optimizer = AdamW(model.parameters(), args.max_lr, (args.beta0, args.beta1), 1e-5, args.decay)
+
+    init_curr, init_peak = record_mem_stats(device)
 
     xb = torch.randint(0, args.vocab_size, (args.batch_size, args.context_length), device=device)
     yb = torch.randint(0, args.vocab_size, (args.batch_size, args.context_length), device=device)
@@ -67,6 +80,10 @@ def train_step(rank, world_size, args):
     optimizer.zero_grad()
     loss.backward()
     torch.cuda.synchronize()
+
+    torch.cuda.reset_peak_memory_stats(device)
+    before_curr, before_peak = record_mem_stats(device)
+
     t2 = time.time()
 
     if args.wrapper:
@@ -90,12 +107,19 @@ def train_step(rank, world_size, args):
     torch.cuda.synchronize()
     t4 = time.time()
 
+    after_curr, after_peak = record_mem_stats(device)
+
     if rank == 0:
         print(f"Mode: {'wrapper' if args.wrapper else 'flat' if args.flat else 'naive'}")
         print(f"Forward Time: {t1 - t0:.4f}s")
         print(f"Backward Time: {t2 - t1:.4f}s")
         print(f"Comm Time: {t3 - t2:.4f}s")
         print(f"Total Step Time: {t4 - t0:.4f}s")
+
+        if args.sharded:
+            print(f"After Init: current={init_curr/1e9:.3f}GB, peak={init_peak/1e9:.3f}GB")
+            print(f"Before Step: current={before_curr/1e9:.3f}GB, peak={before_peak/1e9:.3f}GB")
+            print(f"After Step: current={after_curr/1e9:.3f}GB, peak={after_peak/1e9:.3f}GB")
 
     dist.destroy_process_group()
 
