@@ -12,11 +12,12 @@ class ShardedOptimizer(torch.optim.Optimizer):
     ):
         self.world_size = dist.get_world_size()
         self.rank = dist.get_rank()
+        params = list(params)
 
         if len(params) > 0 and isinstance(params[0], dict):
             self.grouped = params
         else:
-            self.grouped = [{ "params": list(params) }]
+            self.grouped = [{ "params": params }]
 
         flat = []
         for g in self.grouped:
