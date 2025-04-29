@@ -51,12 +51,12 @@ class ShardedOptimizer(torch.optim.Optimizer):
         if not hasattr(self, "inopt"):
             return super().add_param_group(param_group)
 
-        self._grouped.append(param_group)
-        base = len(self._owner)
+        self.grouped.append(param_group)
+        base = len(self.owner)
         for i, p in enumerate(param_group["params"]):
-            self._owner[p] = (base + i) % self.world_size
+            self.owner[p] = (base + i) % self.world_size
 
-        cur_params = [p for p in param_group["params"] if self._owner[p] == self.rank]
+        cur_params = [p for p in param_group["params"] if self.owner[p] == self.rank]
         grp = { k: v for k, v in param_group.items() if k != "params" }
         grp["params"] = cur_params
 
