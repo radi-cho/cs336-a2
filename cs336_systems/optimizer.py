@@ -36,6 +36,7 @@ class ShardedOptimizer(torch.optim.Optimizer):
             grp["params"] = cur_params
             cur_group.append(grp)
 
+        super().__init__(cur_group, kwargs)
         self.optimizer = optimizer_cls(cur_group, **kwargs)
 
     def step(self, closure=None):
