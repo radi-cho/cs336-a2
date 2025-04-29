@@ -38,7 +38,7 @@ def train_step(rank, world_size, args):
     if args.sharded:
         optimizer = ShardedOptimizer(model.parameters(), AdamW, args.max_lr, (args.beta0, args.beta1), args.eps, args.decay)
     else:
-        optimizer = AdamW(model.parameters(), args.max_lr, (args.beta0, args.beta1), args.eps, args.decay)
+        optimizer = AdamW(model.parameters(), lr=args.max_lr, betas=(args.beta0, args.beta1), eps=args.eps, weight_decay=args.decay)
 
     init_curr, init_peak = record_mem_stats(device)
 
