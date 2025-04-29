@@ -56,10 +56,10 @@ class ShardedOptimizer(torch.optim.Optimizer):
         for i, p in enumerate(param_group["params"]):
             self._owner[p] = (base + i) % self.world_size
 
-        local_ps = [p for p in param_group["params"] if self._owner[p] == self.rank]
+        cur_params = [p for p in param_group["params"] if self._owner[p] == self.rank]
         grp = { k: v for k, v in param_group.items() if k != "params" }
-        grp["params"] = local_ps
+        grp["params"] = cur_params
 
         super().add_param_group(grp)
-        if local_ps:
+        if cur_params:
             self.inopt.add_param_group(grp)
