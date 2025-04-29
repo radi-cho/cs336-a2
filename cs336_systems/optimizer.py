@@ -37,10 +37,10 @@ class ShardedOptimizer(torch.optim.Optimizer):
             cur_group.append(grp)
 
         super().__init__(cur_group, kwargs)
-        self.optimizer = optimizer_cls(cur_group, **kwargs)
+        self.inopt = optimizer_cls(cur_group, **kwargs)
 
     def step(self, closure=None):
-        loss = self.optimizer.step(closure) if closure else self.optimizer.step()
+        loss = self.inopt.step(closure) if closure else self.inopt.step()
 
         for p, owner in self.owner.items():
             dist.broadcast(p.data, src=owner)
@@ -56,4 +56,4 @@ class ShardedOptimizer(torch.optim.Optimizer):
         if cur_params:
             grp = { k: v for k, v in param_group.items() if k != "params" }
             grp["params"] = cur_params
-            self.optimizer.add_param_group(grp)
+            self.inopt.add_param_group(grp)
