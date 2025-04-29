@@ -110,7 +110,7 @@ def train_step(rank, world_size, args):
     after_curr, after_peak = record_mem_stats(device)
 
     if rank == 0:
-        print(f"Mode: {'wrapper' if args.wrapper else 'flat' if args.flat else 'naive'}")
+        print(f"Wrapper: {args.wrapper}, Flat: {args.flat}, Sharded: {args.sharded}")
         print(f"Forward Time: {t1 - t0:.4f}s")
         print(f"Backward Time: {t2 - t1:.4f}s")
         print(f"Comm Time: {t3 - t2:.4f}s")
@@ -141,6 +141,7 @@ if __name__ == "__main__":
     parser.add_argument("--decay", type=float, default=0.01)
     parser.add_argument("--flat", action="store_true")
     parser.add_argument("--wrapper", action="store_true")
+    parser.add_argument("--sharded", action="store_true")
     args = parser.parse_args()
 
     mp.spawn(train_step, args=(2, args), nprocs=2, join=True)
