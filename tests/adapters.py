@@ -6,7 +6,7 @@ import torch
 
 from cs336_systems.flashattn import FlashAttention, FlashAttentionTriton
 from cs336_systems.ddp import DDP, DDPBucket
-from cs336_systems import ShardedOptimizer
+from cs336_systems.optimizer import ShardedOptimizer
 
 
 def get_flashattention_autograd_function_pytorch() -> Type:
