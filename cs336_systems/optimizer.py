@@ -48,12 +48,18 @@ class ShardedOptimizer(torch.optim.Optimizer):
         return loss
 
     def add_param_group(self, param_group: dict[str, Any]):
-        self.grouped.append(param_group)
-        base = len(self.owner)
+        if not hasattr(self, "inopt"):
+            return super().add_param_group(param_group)
+
+        self._grouped.append(param_group)
+        base = len(self._owner)
         for i, p in enumerate(param_group["params"]):
-            self.owner[p] = (base + i) % self.world_size
-        cur_params = [p for p in param_group["params"] if self.owner[p] == self.rank]
-        if cur_params:
-            grp = { k: v for k, v in param_group.items() if k != "params" }
-            grp["params"] = cur_params
+            self._owner[p] = (base + i) % self.world_size
+
+        local_ps = [p for p in param_group["params"] if self._owner[p] == self.rank]
+        grp = { k: v for k, v in param_group.items() if k != "params" }
+        grp["params"] = local_ps
+
+        super().add_param_group(grp)
+        if local_ps:
             self.inopt.add_param_group(grp)
