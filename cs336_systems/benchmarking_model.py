@@ -43,7 +43,7 @@ def benchmark_model(
     dtype_context = torch.autocast(device_type=device, dtype=torch.bfloat16) if mixed_precision else nullcontext()
     dataset = np.random.randint(low=0, high=vocab_size, size=(100000,))
 
-    # torch.cuda.memory._record_memory_history(max_entries=1000000)
+    torch.cuda.memory._record_memory_history(max_entries=1000000)
 
     for _ in range(warmup_steps):
         inputs, targets = get_batch(dataset, batch_size, context_length, device)
@@ -99,8 +99,8 @@ def benchmark_model(
 
         times.append(end - start)
 
-    # torch.cuda.memory._dump_snapshot("memory_snapshot.pickle")
-    # torch.cuda.memory._record_memory_history(enabled=None)
+    torch.cuda.memory._dump_snapshot("memory_snapshot.pickle")
+    torch.cuda.memory._record_memory_history(enabled=None)
 
     avg_time = np.mean(times)
     std_time = np.std(times)
